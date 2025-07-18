@@ -1,20 +1,16 @@
 import css from "./NoteForm.module.css";
-import type { Note } from "../../types/note.ts";
-import { type FormikHelpers, useFormik } from "formik";
+import type { NoteCreate } from "../../types/note.ts";
+import { type FormikHelpers, useFormik, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useUpdateNote } from "../../hooks/useUpdateNote.ts";
-import { useCreateNote } from "../../hooks/useCreateNote.ts";
-import { ModalVariant } from "../../enums";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { store } from "../../services/noteService.ts";
 import toast from "react-hot-toast";
 
 export interface NoteFormProps {
   onClose: () => void;
-  note: Note | null;
   tags: string[];
-  variant: string;
 }
 
-type FieldName = "title" | "content" | "tag";
 
 interface InitialValues {
   title: string;
@@ -22,56 +18,38 @@ interface InitialValues {
   tag: string;
 }
 
-const NoteForm = ({ onClose, note, tags, variant }: NoteFormProps) => {
-  const createNote = useCreateNote();
-  const updateNote = useUpdateNote();
+const NoteForm = ({ onClose, tags }: NoteFormProps) => {
+  const queryClient = useQueryClient();
+  const createNote = useMutation({
+    mutationFn: store,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      toast.success('Note created successfully');
+    },
+    onError: () => {
+      toast.error('Failed to create note');
+    }
+  });
+
   const handleSubmit = (
     values: InitialValues,
     helpers: FormikHelpers<InitialValues>,
   ) => {
-    switch (variant) {
-      case ModalVariant.CREATE:
-        createNote.mutate(values, {
-          onSuccess: () => {
-            helpers.resetForm();
-            onClose();
-          },
-        });
-        return;
-      case ModalVariant.UPDATE:
-        if (!note) {
-          toast.error("Note is NULL can't update");
-          break;
-        }
-        updateNote.mutate(
-          { id: note.id, data: values },
-          {
-            onSuccess: () => {
-              helpers.resetForm();
-              onClose();
-            },
-          },
-        );
-        return;
-      default:
-        createNote.mutate(values, {
-          onSuccess: () => {
-            helpers.resetForm();
-            onClose();
-          },
-        });
-        return;
-    }
+    createNote.mutate(values, {
+      onSuccess: () => {
+        helpers.resetForm();
+        onClose();
+      },
+    });
   };
 
   const schema = Yup.object({
     title: Yup.string()
-      .min(3, "Title must be at least 2 characters")
+      .min(3, "Title must be at least 3 characters")
       .max(50, "Title must be max 50 characters")
       .required("Title is required"),
     content: Yup.string()
-      .max(500, "Content must be max 500 characters")
-      .required("Content is required"),
+      .max(500, "Content must be max 500 characters"),
     tag: Yup.string()
       .oneOf(tags, "Please choose a valid tag")
       .required("Tag is required"),
@@ -79,19 +57,13 @@ const NoteForm = ({ onClose, note, tags, variant }: NoteFormProps) => {
 
   const formik = useFormik<InitialValues>({
     initialValues: {
-      title: note?.title ?? "",
-      content: note?.content ?? "",
-      tag: note?.tag || tags[0] || "",
+      title: "",
+      content: "",
+      tag: tags[0] || "",
     },
     validationSchema: schema,
     onSubmit: handleSubmit,
   });
-  const handleCheckError = (fieldName: FieldName) => {
-    if (formik.errors[fieldName]) {
-      return formik.errors[fieldName];
-    }
-    return "";
-  };
 
   return (
     <form className={css.form} onSubmit={formik.handleSubmit}>
@@ -105,7 +77,7 @@ const NoteForm = ({ onClose, note, tags, variant }: NoteFormProps) => {
           onChange={formik.handleChange}
           className={css.input}
         />
-        <span className={css.error}>{handleCheckError("title")}</span>
+        <ErrorMessage name="title" component="span" className={css.error} />
       </div>
 
       <div className={css.formGroup}>
@@ -118,7 +90,7 @@ const NoteForm = ({ onClose, note, tags, variant }: NoteFormProps) => {
           onChange={formik.handleChange}
           className={css.textarea}
         />
-        <span className={css.error}>{handleCheckError("content")}</span>
+        <ErrorMessage name="content" component="span" className={css.error} />
       </div>
 
       <div className={css.formGroup}>
@@ -137,7 +109,7 @@ const NoteForm = ({ onClose, note, tags, variant }: NoteFormProps) => {
             </option>
           ))}
         </select>
-        <span className={css.error}>{handleCheckError("tag")}</span>
+        <ErrorMessage name="tag" component="span" className={css.error} />
       </div>
 
       <div className={css.actions}>

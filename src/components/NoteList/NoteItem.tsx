@@ -1,17 +1,28 @@
 import css from "./NoteList.module.css";
 import type { Note } from "../../types/note.ts";
-import type { ModalVariant } from "../../enums";
-import { useDeleteNote } from "../../hooks/useDeleteNote.ts";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteById } from "../../services/noteService.ts";
 import { type MouseEvent } from "react";
+import toast from "react-hot-toast";
 
 export interface NoteItemProps {
   note: Note;
   setCurrentNote: (note: Note) => void;
-  setVariant: (variant: ModalVariant) => void;
 }
 
 const NoteItem = ({ note, setCurrentNote }: NoteItemProps) => {
-  const deleteNote = useDeleteNote();
+  const queryClient = useQueryClient();
+  const deleteNote = useMutation({
+    mutationFn: deleteById,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      toast.success('Note deleted successfully');
+    },
+    onError: () => {
+      toast.error('Failed to delete note');
+    }
+  });
+
   const handleClickCard = () => {
     setCurrentNote(note);
   };
