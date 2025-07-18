@@ -5,11 +5,9 @@ import NoteForm from '../NoteForm/NoteForm';
 
 export interface NoteModalProps {
     onClose: () => void;
-    tags: string[];
 }
 
-
-const NoteModal = ({onClose, tags}: NoteModalProps) => {
+const NoteModal = ({onClose}: NoteModalProps) => {
     useEffect(() => {
         const handlePressEsc = (event: KeyboardEvent) => {
            if (event.key === 'Escape') {
@@ -39,12 +37,11 @@ const NoteModal = ({onClose, tags}: NoteModalProps) => {
                 onClick={(event: MouseEvent) => {
                 event.stopPropagation();
             }}>
-                <NoteForm onClose={onClose} tags={tags} />
+                <NoteForm onClose={onClose} />
             </div>
         </div>,
         document.body
     )
 };
-
 
 export default NoteModal;

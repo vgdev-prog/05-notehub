@@ -1,19 +1,18 @@
 import css from "./NoteList.module.css";
 import type { Note } from "../../types/note.ts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteById } from "../../services/noteService.ts";
+import { deleteNote } from "../../services/noteService.ts";
 import { type MouseEvent } from "react";
 import toast from "react-hot-toast";
 
 export interface NoteItemProps {
   note: Note;
-  setCurrentNote: (note: Note) => void;
 }
 
-const NoteItem = ({ note, setCurrentNote }: NoteItemProps) => {
+const NoteItem = ({ note }: NoteItemProps) => {
   const queryClient = useQueryClient();
-  const deleteNote = useMutation({
-    mutationFn: deleteById,
+  const deleteNoteMutation = useMutation({
+    mutationFn: deleteNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       toast.success('Note deleted successfully');
@@ -23,12 +22,8 @@ const NoteItem = ({ note, setCurrentNote }: NoteItemProps) => {
     }
   });
 
-  const handleClickCard = () => {
-    setCurrentNote(note);
-  };
-
   return (
-    <li className={css.listItem} onClick={handleClickCard}>
+    <li className={css.listItem}>
       <h2 className={css.title}>{note.title}</h2>
       <p className={css.content}>{note.content}</p>
       <div className={css.footer}>
@@ -36,7 +31,7 @@ const NoteItem = ({ note, setCurrentNote }: NoteItemProps) => {
         <button
           onClick={(event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
-            deleteNote.mutate(note.id);
+            deleteNoteMutation.mutate(note.id);
           }}
           className={css.button}
         >

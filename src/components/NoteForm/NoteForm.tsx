@@ -1,27 +1,21 @@
 import css from "./NoteForm.module.css";
-import type { NoteCreate } from "../../types/note.ts";
-import { type FormikHelpers, useFormik, ErrorMessage } from "formik";
+import type { NoteCreate, NoteTag } from "../../types/note.ts";
+import { type FormikHelpers, useFormik } from "formik";
 import * as Yup from "yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { store } from "../../services/noteService.ts";
+import { createNote } from "../../services/noteService.ts";
 import toast from "react-hot-toast";
 
 export interface NoteFormProps {
   onClose: () => void;
-  tags: string[];
 }
 
+const noteOptions: NoteTag[] = ['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'];
 
-interface InitialValues {
-  title: string;
-  content: string;
-  tag: string;
-}
-
-const NoteForm = ({ onClose, tags }: NoteFormProps) => {
+const NoteForm = ({ onClose }: NoteFormProps) => {
   const queryClient = useQueryClient();
-  const createNote = useMutation({
-    mutationFn: store,
+  const createNoteMutation = useMutation({
+    mutationFn: createNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       toast.success('Note created successfully');
@@ -32,10 +26,10 @@ const NoteForm = ({ onClose, tags }: NoteFormProps) => {
   });
 
   const handleSubmit = (
-    values: InitialValues,
-    helpers: FormikHelpers<InitialValues>,
+    values: NoteCreate,
+    helpers: FormikHelpers<NoteCreate>,
   ) => {
-    createNote.mutate(values, {
+    createNoteMutation.mutate(values, {
       onSuccess: () => {
         helpers.resetForm();
         onClose();
@@ -51,15 +45,15 @@ const NoteForm = ({ onClose, tags }: NoteFormProps) => {
     content: Yup.string()
       .max(500, "Content must be max 500 characters"),
     tag: Yup.string()
-      .oneOf(tags, "Please choose a valid tag")
+      .oneOf(noteOptions, "Please choose a valid tag")
       .required("Tag is required"),
   });
 
-  const formik = useFormik<InitialValues>({
+  const formik = useFormik<NoteCreate>({
     initialValues: {
       title: "",
       content: "",
-      tag: tags[0] || "",
+      tag: "Todo",
     },
     validationSchema: schema,
     onSubmit: handleSubmit,
@@ -77,7 +71,9 @@ const NoteForm = ({ onClose, tags }: NoteFormProps) => {
           onChange={formik.handleChange}
           className={css.input}
         />
-        <ErrorMessage name="title" component="span" className={css.error} />
+        {formik.touched.title && formik.errors.title && (
+          <span className={css.error}>{formik.errors.title}</span>
+        )}
       </div>
 
       <div className={css.formGroup}>
@@ -90,7 +86,9 @@ const NoteForm = ({ onClose, tags }: NoteFormProps) => {
           onChange={formik.handleChange}
           className={css.textarea}
         />
-        <ErrorMessage name="content" component="span" className={css.error} />
+        {formik.touched.content && formik.errors.content && (
+          <span className={css.error}>{formik.errors.content}</span>
+        )}
       </div>
 
       <div className={css.formGroup}>
@@ -100,23 +98,28 @@ const NoteForm = ({ onClose, tags }: NoteFormProps) => {
           name="tag"
           value={formik.values.tag}
           onChange={formik.handleChange}
-          disabled={!tags.length}
           className={css.select}
         >
-          {tags.map((tag) => (
+          {noteOptions.map((tag) => (
             <option value={tag} key={tag}>
               {tag}
             </option>
           ))}
         </select>
-        <ErrorMessage name="tag" component="span" className={css.error} />
+        {formik.touched.tag && formik.errors.tag && (
+          <span className={css.error}>{formik.errors.tag}</span>
+        )}
       </div>
 
       <div className={css.actions}>
         <button onClick={onClose} type="button" className={css.cancelButton}>
           Cancel
         </button>
-        <button type="submit" className={css.submitButton} disabled={false}>
+        <button
+          type="submit"
+          className={css.submitButton}
+          disabled={createNoteMutation.isPending}
+        >
           Create note
         </button>
       </div>

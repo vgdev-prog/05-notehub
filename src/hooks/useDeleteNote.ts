@@ -1,12 +1,12 @@
 import {useMutation, useQueryClient} from "@tanstack/react-query";
-import * as noteService from '../services/noteService.ts'
+import { deleteNote } from '../services/noteService.ts'
 import toast from "react-hot-toast";
 
 export const useDeleteNote = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id: number) => noteService.deleteById(id),
+        mutationFn: (id: number) => deleteNote(id),
         onSuccess: async () => {
           await  queryClient.invalidateQueries({queryKey: ['notes']});
         },

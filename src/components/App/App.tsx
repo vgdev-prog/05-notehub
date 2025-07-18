@@ -3,111 +3,90 @@ import css from "./App.module.css";
 import SearchBox from "../SearchBox/SearchBox.tsx";
 import Error from "../Error/Error.tsx";
 import Pagination from "../Pagination/Pagination.tsx";
-import { useNotes } from "../../hooks/useNotes.ts";
+import { useQuery } from "@tanstack/react-query";
+import { fetchNotes } from "../../services/noteService.ts";
 import NoteList from "../NoteList/NoteList.tsx";
 import Loader from "../Loader/Loader.tsx";
-import NoteModal from "../NoteModal/NoteModal.tsx";
-import type { Note } from "../../types/note.ts";
-import toast from "react-hot-toast";
+import { Modal } from "../Modal/Modal.tsx";
+import NoteForm from "../NoteForm/NoteForm.tsx";
 import { useDebounce } from "use-debounce";
 
 function App() {
   const [page, setPage] = useState<number>(1);
   const [query, setQuery] = useState<string>("");
   const [debouncedQuery] = useDebounce(query, 300);
-  const [currentNote, setCurrentNote] = useState<Note | null>(null);
-  const [isOpenModal, setIsOpenModal] = useState<boolean>(false);
-  const [tags, setTags] = useState<string[]>([]);
-  const onClose = () => {
-    setCurrentNote(null);
-    setIsOpenModal(false);
-  };
-  const onOpen = (note: Note) => {
-    setCurrentNote(note);
-    setIsOpenModal(true);
-  };
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const onSearch = (query: string) => {
     setQuery(query);
   };
 
   const onClickCreateBtn = () => {
-    setIsOpenModal(true);
+    setIsModalOpen(true);
   };
 
-  const { data, isLoading, error } = useNotes(page, debouncedQuery);
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['notes', page, debouncedQuery],
+    queryFn: () => fetchNotes({ page, search: debouncedQuery }),
+  });
 
   useEffect(() => {
     setPage(1);
   }, [debouncedQuery]);
 
-  useEffect(() => {
-    if (!data) return;
-
-    if (Array.isArray(data.notes) && data.notes.length === 0) {
-      toast.error("There is no data");
-    }
-
-    setTags([...new Set(data?.notes.map((note) => note.tag))]);
-  }, [data]);
-
   if (error) {
     return (
-      <>
-        <div className={css.app}>
-          <div className={`${css.container} ${css.header_container}`}>
-            <header className={`${css.toolbar}`}>
-              <SearchBox onSearch={onSearch} />
-              {data && data.totalPages && (
-                <Pagination
-                  page={page}
-                  setPage={setPage}
-                  totalPages={data.totalPages}
-                />
-              )}
-              <button onClick={onClickCreateBtn} className={css.button}>
-                Create note +
-              </button>
-            </header>
-          </div>
-          <Error message={"404 Not Found"} />
-        </div>
-      </>
+      <div className={css.app}>
+        <header className={css.toolbar}>
+          <SearchBox onSearch={onSearch} />
+          {data && data.totalPages > 1 && (
+            <Pagination
+              page={page}
+              setPage={setPage}
+              totalPages={data.totalPages}
+            />
+          )}
+          <button onClick={onClickCreateBtn} className={css.button}>
+            Create note +
+          </button>
+        </header>
+        <Error message={"Failed to load notes"} />
+      </div>
     );
   }
+
   return (
-    <>
-      <div className={css.app}>
-        <div className={`${css.container} ${css.header_container}`}>
-          <header className={`${css.toolbar}`}>
-            <SearchBox onSearch={onSearch} />
-            {data && data.totalPages > 1 && (
-              <Pagination
-                page={page}
-                setPage={setPage}
-                totalPages={data.totalPages}
-              />
-            )}
-            <button onClick={onClickCreateBtn} className={css.button}>
-              Create note +
-            </button>
-          </header>
-        </div>
-        {isLoading ? (
-          <Loader />
-        ) : (
-          data && (
-            <NoteList
-              setCurrentNote={onOpen}
-              notes={data.notes}
-            />
-          )
+    <div className={css.app}>
+      <header className={css.toolbar}>
+        <SearchBox onSearch={onSearch} />
+        {data && data.totalPages > 1 && (
+          <Pagination
+            page={page}
+            setPage={setPage}
+            totalPages={data.totalPages}
+          />
         )}
-        {isOpenModal && (
-          <NoteModal onClose={onClose} tags={tags} />
-        )}
-      </div>
-    </>
+        <button onClick={onClickCreateBtn} className={css.button}>
+          Create note +
+        </button>
+      </header>
+      
+      {isLoading ? (
+        <Loader />
+      ) : (
+        data && data.notes.length > 0 && (
+          <NoteList notes={data.notes} />
+        )
+      )}
+      
+      <Modal isOpen={isModalOpen} onClose={closeModal}>
+        <NoteForm onClose={closeModal} />
+      </Modal>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import * as noteService from "../services/noteService.ts";
+import { createNote } from "../services/noteService.ts";
 import type { Note, NoteCreate } from "../types/note.ts";
 import toast from "react-hot-toast";
 
@@ -7,7 +7,7 @@ export const useCreateNote = () => {
   const queryClient = useQueryClient();
 
   return useMutation<Note, Error, NoteCreate>({
-    mutationFn: (data: NoteCreate) => noteService.store(data),
+    mutationFn: (data: NoteCreate) => createNote(data),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
