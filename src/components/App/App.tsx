@@ -7,20 +7,17 @@ import { useNotes } from "../../hooks/useNotes.ts";
 import NoteList from "../NoteList/NoteList.tsx";
 import Loader from "../Loader/Loader.tsx";
 import NoteModal from "../NoteModal/NoteModal.tsx";
-import NoteForm from "../NoteForm/NoteForm.tsx";
 import type { Note } from "../../types/note.ts";
 import toast from "react-hot-toast";
-import { ModalVariant } from "../../enums";
+import { useDebounce } from "use-debounce";
 
 function App() {
   const [page, setPage] = useState<number>(1);
   const [query, setQuery] = useState<string>("");
+  const [debouncedQuery] = useDebounce(query, 300);
   const [currentNote, setCurrentNote] = useState<Note | null>(null);
   const [isOpenModal, setIsOpenModal] = useState<boolean>(false);
   const [tags, setTags] = useState<string[]>([]);
-  const [modalVariant, setModalVariant] = useState<ModalVariant>(
-    ModalVariant.CREATE,
-  );
   const onClose = () => {
     setCurrentNote(null);
     setIsOpenModal(false);
@@ -34,20 +31,15 @@ function App() {
     setQuery(query);
   };
 
-  const onModalVariant = (variant: ModalVariant) => {
-    setModalVariant(variant);
-  };
-
   const onClickCreateBtn = () => {
     setIsOpenModal(true);
-    onModalVariant(ModalVariant.CREATE);
   };
 
-  const { data, isLoading, error } = useNotes(page, query);
+  const { data, isLoading, error } = useNotes(page, debouncedQuery);
 
   useEffect(() => {
     setPage(1);
-  }, [query]);
+  }, [debouncedQuery]);
 
   useEffect(() => {
     if (!data) return;
@@ -107,20 +99,12 @@ function App() {
           data && (
             <NoteList
               setCurrentNote={onOpen}
-              setVariant={onModalVariant}
               notes={data.notes}
             />
           )
         )}
         {isOpenModal && (
-          <NoteModal onClose={onClose}>
-            <NoteForm
-              variant={modalVariant}
-              onClose={onClose}
-              note={currentNote}
-              tags={tags}
-            />
-          </NoteModal>
+          <NoteModal onClose={onClose} tags={tags} />
         )}
       </div>
     </>
