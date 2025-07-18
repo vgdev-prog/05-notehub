@@ -17,6 +17,10 @@
   align-items: center;
   max-width: 1200px;
 }
+.maxWidth {
+  max-width: 1200px;
+  margin: 0 auto;
+}
 
 .button {
   padding: 6px 12px;

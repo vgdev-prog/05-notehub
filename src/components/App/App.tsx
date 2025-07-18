@@ -74,14 +74,17 @@ function App() {
           Create note +
         </button>
       </header>
-      
-      {isLoading ? (
-        <Loader />
-      ) : (
-        data && data.notes.length > 0 && (
-          <NoteList notes={data.notes} />
-        )
-      )}
+
+      <div className={css.maxWidth}>
+        {isLoading ? (
+            <Loader />
+        ) : (
+            data && data.notes.length > 0 && (
+                <NoteList notes={data.notes} />
+            )
+        )}
+      </div>
+
       
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <NoteForm onClose={closeModal} />
