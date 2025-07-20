@@ -32,6 +32,7 @@ function App() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['notes', page, debouncedQuery],
     queryFn: () => fetchNotes({ page, search: debouncedQuery }),
+    placeholderData: (previousData) => previousData,
   });
 
   useEffect(() => {
