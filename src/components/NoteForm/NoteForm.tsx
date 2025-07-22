@@ -1,10 +1,11 @@
 import css from "./NoteForm.module.css";
 import type { NoteCreate, NoteTag } from "../../types/note.ts";
-import { type FormikHelpers, useFormik, ErrorMessage } from "formik";
+import { type FormikHelpers, useFormik } from "formik";
 import * as Yup from "yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNote } from "../../services/noteService.ts";
 import toast from "react-hot-toast";
+import ErrorMessage from "../ErrorMessage/ErrorMessage.tsx";
 
 export interface NoteFormProps {
   onClose: () => void;
@@ -14,11 +15,13 @@ const noteOptions: NoteTag[] = ['Todo', 'Work', 'Personal', 'Meeting', 'Shopping
 
 const NoteForm = ({ onClose }: NoteFormProps) => {
   const queryClient = useQueryClient();
+  
   const createNoteMutation = useMutation({
     mutationFn: createNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       toast.success('Note created successfully');
+      onClose();
     },
     onError: () => {
       toast.error('Failed to create note');
@@ -32,10 +35,10 @@ const NoteForm = ({ onClose }: NoteFormProps) => {
     createNoteMutation.mutate(values, {
       onSuccess: () => {
         helpers.resetForm();
-        onClose();
       },
     });
   };
+
 
   const schema = Yup.object({
     title: Yup.string()
@@ -59,6 +62,7 @@ const NoteForm = ({ onClose }: NoteFormProps) => {
     onSubmit: handleSubmit,
   });
 
+
   return (
     <form className={css.form} onSubmit={formik.handleSubmit}>
       <div className={css.formGroup}>
@@ -71,7 +75,7 @@ const NoteForm = ({ onClose }: NoteFormProps) => {
           onChange={formik.handleChange}
           className={css.input}
         />
-        <ErrorMessage name="title" component="span" className={css.error} />
+        <ErrorMessage error={formik.errors.title as string} className={css.error} />
       </div>
 
       <div className={css.formGroup}>
@@ -84,7 +88,7 @@ const NoteForm = ({ onClose }: NoteFormProps) => {
           onChange={formik.handleChange}
           className={css.textarea}
         />
-        <ErrorMessage name="content" component="span" className={css.error} />
+        <ErrorMessage error={formik.errors.content as string} className={css.error} />
       </div>
 
       <div className={css.formGroup}>
@@ -102,7 +106,7 @@ const NoteForm = ({ onClose }: NoteFormProps) => {
             </option>
           ))}
         </select>
-        <ErrorMessage name="tag" component="span" className={css.error} />
+        <ErrorMessage error={formik.errors.tag as string} className={css.error} />
       </div>
 
       <div className={css.actions}>
