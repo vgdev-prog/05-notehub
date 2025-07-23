@@ -47,7 +47,7 @@ function App() {
           {data && data.totalPages > 1 && (
             <Pagination
               page={page}
-              setPage={setPage}
+              onPageChange={setPage}
               totalPages={data.totalPages}
             />
           )}
@@ -67,7 +67,7 @@ function App() {
         {data && data.totalPages > 1 && (
           <Pagination
             page={page}
-            setPage={setPage}
+            onPageChange={setPage}
             totalPages={data.totalPages}
           />
         )}
